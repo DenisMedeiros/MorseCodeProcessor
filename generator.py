@@ -5,7 +5,6 @@ import sounddevice as sd
 import soundfile as sf
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.fftpack
 from scipy import signal
 
 TONAL = 440 # Nota A, em 440 Hz.
@@ -17,6 +16,9 @@ DURACAO_BASE = 0.060 # 100 ms
 DURACAO_PONTO = DURACAO_BASE
 DURACAO_TRACO = 3*DURACAO_BASE
 DURACAO_INTERVALO = DURACAO_BASE
+
+SNRdB = 100
+SNR = 10.0 ** (SNRdB/10.0)
 
 CODIGO = {
     'a': '.-',     'b': '-...',   'c': '-.-.', 
@@ -132,33 +134,40 @@ if __name__ == "__main__":
     
     texto = "ajuda"
 
-    print('[1] Convertendo texto para morse...')
+    print('[1] Convertendo texto para morse.')
     morse = produzir_morse(texto)
 
-    print('[2] Transformando o código morse em áudio...')
+    print('[2] Transformando o código morse em áudio.')
     audio = produzir_audio(morse)
 
     n_amostras = len(audio)
     t = np.arange(0, n_amostras*T_AMOST, T_AMOST, dtype='float64')
     
-    ruido_gaussiano = np.random.normal(0, 5, n_amostras)
-     
-    ruido_senoidal = 0.4*np.cos(2*np.pi*100*t) + 0.3*np.cos(2*np.pi*800*t)
+    print('[3] Criando ruído gaussiano branco, com SNR(dB) = %d.' %SNRdB)
+    
+    # Teorema de Parserval
+    potencia_sinal = np.sum(np.square(audio))/n_amostras;
+
+    # Gerando ruído gaussiano branco (média = 0, variancia = potencia do awgn).
+    potencia_ruido = potencia_sinal/SNR
+    media = 0
+    desvio_padrao = np.sqrt(potencia_ruido)
+    ruido_gaussiano = np.random.normal(media, desvio_padrao, n_amostras)
+    
     
     audio_gaussiano = audio + ruido_gaussiano
-    audio_senoidal = audio + ruido_senoidal
+    
+    print ('[4] Plotando resultado.')
 
     plotar_sinal(audio, 'Áudio limpo')
     plotar_sinal(audio_gaussiano, 'Áudio com ruído gaussiano branco')
-    plotar_sinal(audio_senoidal, 'Áudio com ruído senoidal')
 
-    print('[3] Armazenando resultado no arquivo "resultado.wav"')
+    print('[5] Armazenando resultado.')
 
     sf.write('audio-limpo.wav', audio, FREQ_AMOST)
     sf.write('audio-ruido-gaussiano.wav', audio_gaussiano, FREQ_AMOST)
-    sf.write('audio-ruido-senoides.wav', audio_senoidal, FREQ_AMOST)
 
-    #print("[4] Tocando resultado final...")
+    #print("[5] Tocando resultado final...")
     #sd.play(audio, FREQ_AMOST)
     #sd.wait() 
 
