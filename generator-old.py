@@ -94,9 +94,9 @@ def intervalo():
 
 ''' Converte uma string com código morse em um áudio. '''
 def produzir_audio(morse):
-
-    resultado = np.zeros(shape=(0,0))
-  
+    
+    resultado = np.zeros(shape=(1,1))
+    
     for caractere in morse:
         if caractere == '.':
             resultado = np.append(resultado, ponto())
@@ -107,10 +107,10 @@ def produzir_audio(morse):
         elif caractere == ' ':
             resultado = np.append(resultado, intervalo())
             resultado = np.append(resultado, intervalo())
-        elif caractere == '/':
+        else:
             resultado = np.append(resultado, intervalo())
             resultado = np.append(resultado, intervalo())
-            
+
     return resultado
     
 ''' Plata um sinal no domínio do tempo e no domínio da frequência.'''
@@ -152,7 +152,7 @@ def plotar_sinal(amostras, titulo='Título'):
     
 if __name__ == "__main__":
     
-    texto = "perigo bomba"
+    texto = "ajuda"
 
     print('[1] Convertendo texto para morse.')
     morse = produzir_morse(texto)
@@ -179,8 +179,8 @@ if __name__ == "__main__":
     
     print ('[4] Plotando resultado.')
 
-    #plotar_sinal(audio, 'Áudio limpo')
-    #plotar_sinal(audio_gaussiano, 'Áudio com ruído gaussiano branco')
+    plotar_sinal(audio, 'Áudio limpo')
+    plotar_sinal(audio_gaussiano, 'Áudio com ruído gaussiano branco')
 
     print('[5] Armazenando resultado.')
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     #sd.wait() 
 
     print("[5] Concluído!")
-    #raw_input()
+    raw_input()
     
 
 
