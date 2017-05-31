@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# =============================================================================
+# Seção de imports
+# =============================================================================
+
 import sounddevice as sd
 import soundfile as sf
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
+
+# =============================================================================
+# Configurações do gerador
+# =============================================================================
 
 TONAL = 440 # Nota A, em 440 Hz.
 BANDA = 4000 # 
@@ -17,8 +25,9 @@ DURACAO_PONTO = DURACAO_BASE
 DURACAO_TRACO = 3*DURACAO_BASE
 DURACAO_INTERVALO = DURACAO_BASE
 
-SNRdB = 100
+SNRdB = 3
 SNR = 10.0 ** (SNRdB/10.0)
+#SNRdB = 10.0 * np.log10(SNRdB)
 
 CODIGO = {
     'a': '.-',     'b': '-...',   'c': '-.-.', 
@@ -37,32 +46,11 @@ CODIGO = {
     '9': '----.' 
 }
 
-def produzir_som(duracao, tonal):    
-    # Gera o intervalo de amostras.
-    n_amostras = duracao/T_AMOST
-    t = np.arange(0, duracao, T_AMOST, dtype='float64')
-    
-    # Gera o sinal digital no tonal.
-    amostras = np.cos(2*np.pi*tonal*t)
-    
-    return amostras
+# =============================================================================
+# Funções do gerador.
+# =============================================================================
 
-def produzir_silencio(duracao):
-    n_amostras = int(duracao/T_AMOST)
-    amostras = np.zeros(shape=(1, n_amostras), dtype='float64')
-    return amostras
-    
-def ponto():
-    return produzir_som(DURACAO_PONTO, TONAL)
-
-def traco():
-    return produzir_som(DURACAO_TRACO, TONAL)
-    
-def intervalo():
-    return produzir_silencio(DURACAO_INTERVALO)
-    
-    
-# Converte de texto para ASCII.
+''' Converte de texto para ASCII. '''
 def produzir_morse(texto):
     saida = ''
     for caractere in texto:
@@ -74,7 +62,37 @@ def produzir_morse(texto):
             saida += '/ '
             
     return saida[:-1]
+
+''' Produz um tonal em uma dada frequência. '''
+def produzir_tonal(duracao, tonal):    
+    # Gera o intervalo de amostras.
+    n_amostras = duracao/T_AMOST
+    t = np.arange(0, duracao, T_AMOST, dtype='float64')
     
+    # Gera o sinal digital no tonal.
+    amostras = np.cos(2*np.pi*tonal*t)
+    
+    return amostras
+
+''' Produz um período de silêncio com duração fornecida. '''
+def produzir_silencio(duracao):
+    n_amostras = int(duracao/T_AMOST)
+    amostras = np.zeros(shape=(1, n_amostras), dtype='float64')
+    return amostras
+
+''' Produz o som de um ponto.'''
+def ponto():
+    return produzir_tonal(DURACAO_PONTO, TONAL)
+
+''' Produz o som de um traço.'''
+def traco():
+    return produzir_tonal(DURACAO_TRACO, TONAL)
+
+''' Produz o som de um intervalo.'''
+def intervalo():
+    return produzir_silencio(DURACAO_INTERVALO)
+
+''' Converte uma string com código morse em um áudio. '''
 def produzir_audio(morse):
     
     resultado = np.zeros(shape=(1,1))
@@ -95,7 +113,7 @@ def produzir_audio(morse):
 
     return resultado
     
-
+''' Plata um sinal no domínio do tempo e no domínio da frequência.'''
 def plotar_sinal(amostras, titulo='Título'):
     n_amostras = len(amostras)
     
@@ -104,8 +122,8 @@ def plotar_sinal(amostras, titulo='Título'):
     freq_naturais = np.fft.fftfreq(n_amostras, T_AMOST)
     
     # Desloca frequência zero para origem.
-    # espectro = np.fft.fftshift(espectro) 
-    # freq_naturais = np.fft.fftshift(freq_naturais)
+    espectro = np.fft.fftshift(espectro) 
+    freq_naturais = np.fft.fftshift(freq_naturais)
     
     fig, ax = plt.subplots(2, 1)
     fig.canvas.set_window_title(titulo)
@@ -128,7 +146,9 @@ def plotar_sinal(amostras, titulo='Título'):
     plt.show(block=False)
     #plt.draw()
     
-    
+# =============================================================================
+# Execução do programa.
+# =============================================================================
     
 if __name__ == "__main__":
     
@@ -145,12 +165,12 @@ if __name__ == "__main__":
     
     print('[3] Criando ruído gaussiano branco, com SNR(dB) = %d.' %SNRdB)
     
-    # Teorema de Parserval
+    # Teorema de Parserval para calcular potência do sinal (áudio).
     potencia_sinal = np.sum(np.square(audio))/n_amostras;
 
     # Gerando ruído gaussiano branco (média = 0, variancia = potencia do awgn).
-    potencia_ruido = potencia_sinal/SNR
     media = 0
+    potencia_ruido = potencia_sinal/SNR
     desvio_padrao = np.sqrt(potencia_ruido)
     ruido_gaussiano = np.random.normal(media, desvio_padrao, n_amostras)
     
