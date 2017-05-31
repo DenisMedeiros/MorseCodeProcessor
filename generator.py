@@ -5,6 +5,7 @@
 # Seção de imports
 # =============================================================================
 
+import random
 import sounddevice as sd
 import soundfile as sf
 import numpy as np
@@ -15,7 +16,9 @@ from scipy import signal
 # Configurações do gerador
 # =============================================================================
 
-TONAL = 440 # Nota A, em 440 Hz.
+# Cada tonal é uma nota musical A, iniciando em A4.
+TONAIS = [440.0, 880.0, 1760.0, 3520.0]
+          
 BANDA = 4000 # 
 FREQ_AMOST = 2 * BANDA # Frequência de amostragem seguindo Nyquist.
 T_AMOST = 1.0/FREQ_AMOST # Período de amostragem.
@@ -63,11 +66,13 @@ def produzir_morse(texto):
             
     return saida[:-1]
 
-''' Produz um tonal em uma dada frequência. '''
-def produzir_tonal(duracao, tonal):    
+''' Produz um tonal, com frequência aleatória, e duração estabelecida. '''
+def produzir_tonal(duracao):    
     # Gera o intervalo de amostras.
     n_amostras = duracao/T_AMOST
     t = np.arange(0, duracao, T_AMOST, dtype='float64')
+    
+    tonal = random.choice(TONAIS)
     
     # Gera o sinal digital no tonal.
     amostras = np.cos(2*np.pi*tonal*t)
@@ -82,11 +87,11 @@ def produzir_silencio(duracao):
 
 ''' Produz o som de um ponto.'''
 def ponto():
-    return produzir_tonal(DURACAO_PONTO, TONAL)
+    return produzir_tonal(DURACAO_PONTO)
 
 ''' Produz o som de um traço.'''
 def traco():
-    return produzir_tonal(DURACAO_TRACO, TONAL)
+    return produzir_tonal(DURACAO_TRACO)
 
 ''' Produz o som de um intervalo.'''
 def intervalo():
@@ -152,7 +157,7 @@ def plotar_sinal(amostras, titulo='Título'):
     
 if __name__ == "__main__":
     
-    texto = "perigo bomba"
+    texto = "perigo tropas inimigas rio"
 
     print('[1] Convertendo texto para morse.')
     morse = produzir_morse(texto)
@@ -179,8 +184,8 @@ if __name__ == "__main__":
     
     print ('[4] Plotando resultado.')
 
-    #plotar_sinal(audio, 'Áudio limpo')
-    #plotar_sinal(audio_gaussiano, 'Áudio com ruído gaussiano branco')
+    plotar_sinal(audio, 'Áudio limpo')
+    plotar_sinal(audio_gaussiano, 'Áudio com ruído gaussiano branco')
 
     print('[5] Armazenando resultado.')
 
@@ -192,7 +197,7 @@ if __name__ == "__main__":
     #sd.wait() 
 
     print("[5] Concluído!")
-    #raw_input()
+    raw_input()
     
 
 
