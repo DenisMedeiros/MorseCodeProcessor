@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# =============================================================================
+# Seção de imports
+# =============================================================================
+
 import sounddevice as sd
 import soundfile as sf
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fftpack
 from scipy import signal
+from utils.peakdetect import peakdetect_fft
 
+# =============================================================================
+# Configurações do receptor
+# =============================================================================
+
+ARQUIVO = "audio-ruido-gaussiano.wav"
+
+
+# =============================================================================
+# Funções do receptor.
+# =============================================================================
 
 def calcular_fft(amostras, t_amost):
     n_amostras = len(amostras)    
@@ -20,6 +35,7 @@ def calcular_fft(amostras, t_amost):
     
     return (freq_naturais, espectro)
     
+''' Plota um sinal no domínio do tempo e no domínio da frequência.'''
 def plotar_sinal(amostras, t_amost, titulo='Título'):
     n_amostras = len(amostras)
     
@@ -28,8 +44,8 @@ def plotar_sinal(amostras, t_amost, titulo='Título'):
     freq_naturais = np.fft.fftfreq(n_amostras, t_amost)
     
     # Desloca frequência zero para origem.
-    # espectro = np.fft.fftshift(espectro) 
-    # freq_naturais = np.fft.fftshift(freq_naturais)
+    espectro = np.fft.fftshift(espectro) 
+    freq_naturais = np.fft.fftshift(freq_naturais)
     
     fig, ax = plt.subplots(2, 1)
     fig.canvas.set_window_title(titulo)
@@ -44,12 +60,13 @@ def plotar_sinal(amostras, t_amost, titulo='Título'):
 
     ax[1].plot(freq_naturais, np.abs(espectro), 'b-')
     ax[1].set_xlabel(u'f(Hz)')
-    ax[1].set_ylabel('|X(f)|')
+    ax[1].set_ylabel(u'|X(f)|')
     ax[1].set_title(u'Sinal no domínio da frequência', 
                                 fontsize= 12, fontweight="bold")
     
     fig.tight_layout()
     plt.show(block=False)
+    #plt.draw()
     
    
 '''
@@ -90,73 +107,95 @@ def plotar_filtro_passa_faixa(b, a, freqs_corte, freq_amost):
     plt.tight_layout()
     plt.show()
 
+# =============================================================================
+# Execução do programa.
+# =============================================================================
 
+if __name__ == "__main__":
 
-sound = "audio-ruido-gaussiano.wav"
+    
+    print('[1] Abrindo arquivo "%s"...' %ARQUIVO)
+    (amostras, freq_amost) = sf.read(ARQUIVO, dtype='float64')
 
-print('[1] Abrindo arquivo "%s"...' %sound)
-(amostras, freq_amost) = sf.read(sound, dtype='float64')
+    t_amost = 1.0/freq_amost
+    n_amostras = len(amostras)
+    duracao = n_amostras * t_amost
+    banda = 0.5 * freq_amost
 
-t_amost = 1.0/freq_amost
-n_amostras = len(amostras)
-duracao = n_amostras * t_amost
-banda = 0.5 * freq_amost
+    print("[2] Informações do áudio:")
+    print("  [2.1] Frequência de Amostragem: %d Hz" %freq_amost)
+    print("  [2.2] Período de Amostragem: %f s" %t_amost)
+    print("  [2.2] Número de amostras: %d" %n_amostras)
+    print("  [2.3] Duração do áudio: %f s" %duracao)
+    print("  [2.4] Banda base: %f Hz" %banda)
+    
 
-print("[2] Informações do áudio:")
-print("  [2.1] Frequência de Amostragem: %d Hz" %freq_amost)
-print("  [2.2] Período de Amostragem: %f s" %t_amost)
-print("  [2.2] Número de amostras: %d" %n_amostras)
-print("  [2.3] Duração do áudio: %f s" %duracao)
-print("  [2.4] Banda base: %f Hz" %banda)
+    print("[3] Calculando FFT do áudio...")
 
-
-print("[3] Calculando FFT do áudio...")
-
-# Calcula a FFT.
-espectro = np.fft.fft(amostras)/n_amostras 
-freq_naturais = np.fft.fftfreq(n_amostras, t_amost)
-
-# Encontra a frequência com maior energia.
-
-print("[4] Encontrando frequência do codigo morse...")
-
-maior_potencia = espectro.max()
-arg_maior_potencia = espectro.argmax()
-freq_maior_potencia = np.round(np.abs(freq_naturais[arg_maior_potencia]))
-
-print("[5] Realizando filtragem passa banda... ")
-
-freq_maior_potencia_relativa = freq_maior_potencia/banda
-limite_inferior = 0.8 * freq_maior_potencia_relativa
-limite_superior = 1.2 * freq_maior_potencia_relativa
-limites = [limite_inferior, limite_superior]
-freq_corte_inferior = limite_inferior * banda
-freq_corte_superior = limite_superior * banda
-freqs_corte = [freq_corte_inferior, freq_corte_superior,]
-
-# Cria o filtro linear do tipo Butterworth passa-faixa,
-b, a = signal.butter(6, limites, 'band', analog=False)
-                                                        
-# Plota a resposta em frequência do filtro.
-plotar_filtro_passa_faixa(b, a, freqs_corte, freq_amost)
-
-# Aplica o filtro no sinal original.
-sinal_filtrado = signal.lfilter(b, a, amostras)
-
-
-
-
-#plotar_sinal(amostras, t_amost, titulo='Sinal original')
-#plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal filtrado')
-
-sf.write('saida-filtrado.wav', sinal_filtrado, freq_amost)
-
-raw_input()
-
+    # Calcula a FFT.
+    espectro = np.fft.fft(amostras)/n_amostras 
+    freq_naturais = np.fft.fftfreq(n_amostras, t_amost)
+    
+    plotar_sinal(amostras, t_amost, 'Áudio limpo')
+    
+    print("[4] Procurando frequências do código morse...")
+     
+    espectro_interesse = np.abs(espectro[0:(n_amostras/2-1)])
+    freq_interesse = abs(freq_naturais[0:(n_amostras/2-1)])
+    
+    # Encontrando impulsos (vários).
+    media_espectro = np.mean(espectro_interesse) 
+    indices_inpulsos = freq_interesse[
+                    np.argwhere(espectro_interesse > 10*media_espectro)
+    ]
+    
+    
+    for i in range(0, len(indices_inpulsos)-1, 1):
+        valor = indices_inpulsos[0]
+        if indices_inpulsos[i+1] - indices_inpulsos[0] > 100:
+        
         
 
+   
+   
+    # Encontra a frequência com maior energia.
 
+    print("[4] Encontrando frequência do codigo morse...")
 
+    maior_potencia = espectro.max()
+    arg_maior_potencia = espectro.argmax()
+    freq_maior_potencia = np.round(np.abs(freq_naturais[arg_maior_potencia]))
 
-#sf.write('saida.ogg', sinal_filtrado[:5000000], freq_amost)
+    print("[5] Realizando filtragem passa banda... ")
+    
+    raw_input()
+    exit()
+
+    freq_maior_potencia_relativa = freq_maior_potencia/banda
+    limite_inferior = 0.8 * freq_maior_potencia_relativa
+    limite_superior = 1.2 * freq_maior_potencia_relativa
+    limites = [limite_inferior, limite_superior]
+    freq_corte_inferior = limite_inferior * banda
+    freq_corte_superior = limite_superior * banda
+    freqs_corte = [freq_corte_inferior, freq_corte_superior,]
+
+    # Cria o filtro linear do tipo Butterworth passa-faixa,
+    b, a = signal.butter(6, limites, 'band', analog=False)
+                                                            
+    # Plota a resposta em frequência do filtro.
+    plotar_filtro_passa_faixa(b, a, freqs_corte, freq_amost)
+
+    # Aplica o filtro no sinal original.
+    sinal_filtrado = signal.lfilter(b, a, amostras)
+
+    #plotar_sinal(amostras, t_amost, titulo='Sinal original')
+    #plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal filtrado')
+
+    sf.write('saida-filtrado.wav', sinal_filtrado, freq_amost)
+
+    raw_input()
+
+           
+
+    #sf.write('saida.ogg', sinal_filtrado[:5000000], freq_amost)
 

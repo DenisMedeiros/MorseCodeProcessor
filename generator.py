@@ -22,11 +22,10 @@ TONAIS = [440.0, 880.0, 1760.0, 3520.0]
 BANDA = 4000 # 
 FREQ_AMOST = 2 * BANDA # Frequência de amostragem seguindo Nyquist.
 T_AMOST = 1.0/FREQ_AMOST # Período de amostragem.
-
-DURACAO_BASE = 0.060 # 100 ms
-DURACAO_PONTO = DURACAO_BASE
-DURACAO_TRACO = 3*DURACAO_BASE
-DURACAO_INTERVALO = DURACAO_BASE
+ 
+DURACAO_PONTO = 0.060 # 60 ms
+DURACAO_TRACO = 3*DURACAO_PONTO
+DURACAO_INTERVALO = DURACAO_PONTO
 
 SNRdB = 3
 SNR = 10.0 ** (SNRdB/10.0)
@@ -118,7 +117,7 @@ def produzir_audio(morse):
             
     return resultado
     
-''' Plata um sinal no domínio do tempo e no domínio da frequência.'''
+''' Plota um sinal no domínio do tempo e no domínio da frequência.'''
 def plotar_sinal(amostras, titulo='Título'):
     n_amostras = len(amostras)
     
