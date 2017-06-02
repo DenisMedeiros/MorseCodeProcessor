@@ -17,8 +17,11 @@ from utils.peakdetect import peakdetect_fft
 # Configurações do receptor
 # =============================================================================
 
-ARQUIVO = "audio-ruido-gaussiano.wav"
+ARQUIVO = "audio-limpo.wav"
 
+DURACAO_PONTO = 0.060 # 60 ms
+DURACAO_TRACO = 3*DURACAO_PONTO
+DURACAO_INTERVALO = DURACAO_PONTO
 
 # =============================================================================
 # Funções do receptor.
@@ -138,6 +141,7 @@ if __name__ == "__main__":
     
     plotar_sinal(amostras, t_amost, 'Áudio limpo')
     
+    '''
     print("[4] Procurando frequências do código morse...")
      
     espectro_interesse = np.abs(espectro[0:(n_amostras/2-1)])
@@ -153,7 +157,7 @@ if __name__ == "__main__":
     for i in range(0, len(indices_inpulsos)-1, 1):
         valor = indices_inpulsos[0]
         if indices_inpulsos[i+1] - indices_inpulsos[0] > 100:
-        
+            pass
         
 
    
@@ -192,10 +196,56 @@ if __name__ == "__main__":
     #plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal filtrado')
 
     sf.write('saida-filtrado.wav', sinal_filtrado, freq_amost)
-
-    raw_input()
-
            
 
     #sf.write('saida.ogg', sinal_filtrado[:5000000], freq_amost)
+    '''
 
+    maximo = np.max(np.abs(amostras))
+    minimo = np.min(np.abs(amostras))
+
+    morse = ''
+    
+    valor_anterior = np.abs(amostras)[0]
+    contador_maximos = 0
+    contador_minimos = 0
+    estava_lendo_maximos = True
+    
+    n_amostras_intervalo = DURACAO_INTERVALO/t_amost
+    
+    morse += ''
+    
+    lendo_maximos = True
+    
+    for amostra in np.abs(amostras): 
+        
+        if lendo_maximos:
+            contador_maximos += 1
+   
+        if amostra <= 0.3:
+            contador_minimos += 1
+        else:
+            lendo_maximos = True
+            contador_minimos = 0
+        
+        if contador_minimos == n_amostras_intervalo:
+            
+            if lendo_maximos:
+                tempo_simbolo = (contador_maximos-contador_minimos)*t_amost
+                if tempo_simbolo >= 0.9 * DURACAO_PONTO and tempo_simbolo <= 1.1 * DURACAO_PONTO:
+                    morse += '. '
+                elif tempo_simbolo >= 0.9 * DURACAO_TRACO and tempo_simbolo <= 1.1 * DURACAO_TRACO:
+                    morse += '- '
+                contador_maximos = 0
+                contador_minimos = 0
+                lendo_maximos = False
+            else:
+                 morse += ' '
+                 contador_minimos = 0
+                
+       
+           
+            
+    print morse
+    raw_input()
+        
