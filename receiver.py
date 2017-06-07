@@ -133,12 +133,12 @@ Esta função calcula a transformada Wavelet, do tipo Morlet, e plota o seu
 comportamento no tempo, mostrando exatamente onde há divisão entre som e 
 silêncio.
 '''
-def plotat_wavelet(amostras, num_amostras_atrasadas, maior_ordem):
+def plotat_wavelet(amostras, maior_ordem):
     
     larguras = np.arange(1, maior_ordem+1)
     cwtmatr = signal.cwt(amostras, signal.morlet, larguras)
     
-    t = np.arange(0, (n_amostras + num_amostras_atrasadas) * t_amost, t_amost, dtype='float64')
+    t = np.arange(0, n_amostras * t_amost, t_amost, dtype='float64')
             
     plt.figure()
     plt.title(u'Transformada Wavelet - primeira janela')
@@ -252,15 +252,17 @@ if __name__ == "__main__":
     atraso = num_amostras_atrasadas * t_amost # Em segundos.
     
     # Corrigindo atraso.
-    amostras = np.append(amostras, np.zeros(num_amostras_atrasadas))
+    amostras_maior = np.append(amostras, np.zeros(num_amostras_atrasadas))
     
     # Criando o filtro FIR.
     coeficientes = signal.firwin(num_coeficientes, freqs_corte, window=('kaiser', beta), pass_zero=False, nyq = banda)
 
     # Filtrando o sinal original.
-    sinal_filtrado = signal.lfilter(coeficientes, 1.0, amostras)
-    t = np.arange(0, (n_amostras + num_amostras_atrasadas) * t_amost, t_amost, dtype='float64')
+    sinal_filtrado = signal.lfilter(coeficientes, 1.0, amostras_maior)
     
+    # Remova o atraso do início do sinal filtrado.
+    sinal_filtrado = np.delete(sinal_filtrado, range(0, num_amostras_atrasadas, 1))
+        
     # Calculando SNR.
     
     ruido_restante = amostras - sinal_filtrado; 
@@ -288,16 +290,18 @@ if __name__ == "__main__":
     plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal Filtrado')
 
     # Plota a transformada Wavelet.
-    #plotat_wavelet(sinal_filtrado, num_amostras_atrasadas, 10)
+    #plotat_wavelet(sinal_filtrado, 10)
   
     print("[5] Convertendo áudio para código morse.")
     
+    plotar_sinal(np.abs(sinal_filtrado), t_amost, titulo='Módulo do sinal filtrado')
+    
     morse = ''
     
-    maximo = np.max(np.abs(amostras))
-    minimo = np.min(np.abs(amostras))
+    maximo = np.max(np.abs(sinal_filtrado))
+    minimo = np.min(np.abs(sinal_filtrado))
     
-    valor_anterior = np.abs(amostras)[0]
+    valor_anterior = np.abs(sinal_filtrado)[0]
     contador_maximos = 0
     contador_minimos = 0
     estava_lendo_maximos = True
@@ -308,21 +312,25 @@ if __name__ == "__main__":
     
     lendo_maximos = True
     
-    for amostra in np.abs(amostras): 
+    for amostra in np.abs(sinal_filtrado): 
         
         if lendo_maximos:
             contador_maximos += 1
    
-        if amostra <= 0.3:
+        if amostra <= 0.6:
             contador_minimos += 1
         else:
             lendo_maximos = True
             contador_minimos = 0
         
         if contador_minimos == n_amostras_intervalo:
+        
+            print "Entrou"
+            print "Contou ", contador_maximos, "maximos"
+            print "Contou ", contador_minimos, "minimos"
             
             if lendo_maximos:
-                tempo_simbolo = (contador_maximos-contador_minimos)*t_amost
+                tempo_simbolo = np.abs(contador_maximos-contador_minimos)*t_amost
                 if tempo_simbolo >= 0.9 * DURACAO_PONTO and tempo_simbolo <= 1.1 * DURACAO_PONTO:
                     morse += '.'
                 elif tempo_simbolo >= 0.9 * DURACAO_TRACO and tempo_simbolo <= 1.1 * DURACAO_TRACO:
@@ -340,6 +348,8 @@ if __name__ == "__main__":
     # Tratando eventuais espaços em exceço.    
     morse = morse.replace("  ", " ") 
     morse = morse.replace("   ", " / ")   
+    
+    print morse
     
     texto = morse_para_texto(morse)
 

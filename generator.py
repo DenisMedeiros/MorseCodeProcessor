@@ -18,7 +18,6 @@ from scipy import signal
 
 # Cada tonal é uma nota musical A, iniciando em A4.
 TONAIS = [440.0, 880.0, 1760.0, 3520.0]
-
           
 BANDA = 4000 # 
 FREQ_AMOST = 2 * BANDA # Frequência de amostragem seguindo Nyquist.
@@ -28,7 +27,7 @@ DURACAO_PONTO = 0.060 # 60 ms
 DURACAO_TRACO = 3*DURACAO_PONTO
 DURACAO_INTERVALO = DURACAO_PONTO
 
-SNRdB = 3
+SNRdB = 5
 SNR = 10.0 ** (SNRdB/10.0)
 #SNRdB = 10.0 * np.log10(SNRdB)
 
