@@ -126,6 +126,36 @@ def plotar_filtro_passa_faixa(b, a, freqs_corte, freq_amost):
     plt.tight_layout()
     plt.show()
 
+''' 
+Esta função calcula a transformada Wavelet, do tipo Morlet, e plota o seu 
+comportamento no tempo, mostrando exatamente onde há divisão entre som e 
+silêncio.
+'''
+def plotat_wavelet(amostras, maior_ordem):
+
+    larguras = np.arange(1, maior_ordem+1)
+    cwtmatr = signal.cwt(amostras, signal.morlet, larguras)
+            
+    plt.figure()
+    plt.title(u'Transformada Wavelet - primeira janela')
+    plt.xlabel(u'Tempo (s)')
+    plt.ylabel(u'Amplitudes')
+    
+    t = np.arange(0, n_amostras * t_amost, t_amost, dtype='float64')
+    plt.plot(t, np.abs(cwtmatr[0]), 'k')
+    plt.show(block=False)  
+    
+    plt.figure()
+    plt.title(u'Transformada Wavelet - última janela')
+    plt.xlabel(u'Tempo (s)')
+    plt.ylabel(u'Amplitudes')
+    
+    t = np.arange(0, n_amostras * t_amost, t_amost, dtype='float64')
+    plt.plot(t, np.abs(cwtmatr[maior_ordem-1]), 'r')
+    plt.show(block=False)  
+     
+    
+       
 # =============================================================================
 # Execução do programa.
 # =============================================================================
@@ -216,6 +246,12 @@ if __name__ == "__main__":
 
     #sf.write('saida.ogg', sinal_filtrado[:5000000], freq_amost)
     '''
+    
+   
+    plotat_wavelet(amostras, 10)
+    
+    raw_input()
+    exit(0)
 
     maximo = np.max(np.abs(amostras))
     minimo = np.min(np.abs(amostras))
