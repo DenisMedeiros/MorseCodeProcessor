@@ -11,7 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fftpack
 from scipy import signal
-from utils.peakdetect import peakdetect_fft
 
 # =============================================================================
 # Configurações do receptor
@@ -22,6 +21,23 @@ ARQUIVO = "audio-limpo.wav"
 DURACAO_PONTO = 0.060 # 60 ms
 DURACAO_TRACO = 3*DURACAO_PONTO
 DURACAO_INTERVALO = DURACAO_PONTO
+
+CODIGO = {
+    'a': '.-',     'b': '-...',   'c': '-.-.', 
+    'd': '-..',    'e': '.',      'f': '..-.',
+    'g': '--.',    'h': '....',   'i': '..',
+    'j': '.---',   'k': '-.-',    'l': '.-..',
+    'm': '--',     'n': '-.',     'o': '---',
+    'p': '.--.',   'q': '--.-',   'r': '.-.',
+    's': '...',    't': '-',      'u': '..-',
+    'v': '...-',   'w': '.--',    'x': '-..-',
+    'y': '-.--',   'z': '--..',
+
+    '0': '-----',  '1': '.----',  '2': '..---',
+    '3': '...--',  '4': '....-',  '5': '.....',
+    '6': '-....',  '7': '--...',  '8': '---..',
+    '9': '----.' 
+}
 
 # =============================================================================
 # Funções do receptor.
@@ -233,9 +249,9 @@ if __name__ == "__main__":
             if lendo_maximos:
                 tempo_simbolo = (contador_maximos-contador_minimos)*t_amost
                 if tempo_simbolo >= 0.9 * DURACAO_PONTO and tempo_simbolo <= 1.1 * DURACAO_PONTO:
-                    morse += '. '
+                    morse += '.'
                 elif tempo_simbolo >= 0.9 * DURACAO_TRACO and tempo_simbolo <= 1.1 * DURACAO_TRACO:
-                    morse += '- '
+                    morse += '-'
                 contador_maximos = 0
                 contador_minimos = 0
                 lendo_maximos = False
@@ -244,8 +260,20 @@ if __name__ == "__main__":
                  contador_minimos = 0
                 
        
-           
-            
-    print morse
+    
+    morse = morse.replace("  ", " ") 
+    morse = morse.replace("   ", " / ")   
+    
+    CODIGO_INVERSO = {v: k for k, v in CODIGO.items()}  
+    texto = ""
+    
+    simbolos = morse.split(" ")
+    for simbolo in simbolos:
+        if simbolo == '/':
+            texto += " "
+        else:
+            texto += CODIGO_INVERSO[simbolo]
+    
+    print texto
     raw_input()
         

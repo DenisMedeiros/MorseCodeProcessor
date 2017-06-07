@@ -17,7 +17,9 @@ from scipy import signal
 # =============================================================================
 
 # Cada tonal é uma nota musical A, iniciando em A4.
-TONAIS = [440.0, 880.0, 1760.0, 3520.0]
+# TONAIS = [440.0, 880.0, 1760.0, 3520.0]
+
+TONAIS = [550.0]
           
 BANDA = 4000 # 
 FREQ_AMOST = 2 * BANDA # Frequência de amostragem seguindo Nyquist.
@@ -66,12 +68,10 @@ def produzir_morse(texto):
     return saida[:-1]
 
 ''' Produz um tonal, com frequência aleatória, e duração estabelecida. '''
-def produzir_tonal(duracao):    
+def produzir_tonal(duracao, tonal):    
     # Gera o intervalo de amostras.
     n_amostras = duracao/T_AMOST
     t = np.arange(0, duracao, T_AMOST, dtype='float64')
-    
-    tonal = random.choice(TONAIS)
     
     # Gera o sinal digital no tonal.
     amostras = np.cos(2*np.pi*tonal*t)
@@ -86,11 +86,13 @@ def produzir_silencio(duracao):
 
 ''' Produz o som de um ponto.'''
 def ponto():
-    return produzir_tonal(DURACAO_PONTO)
+    tonal = random.choice(TONAIS)
+    return produzir_tonal(DURACAO_PONTO, tonal)
 
 ''' Produz o som de um traço.'''
 def traco():
-    return produzir_tonal(DURACAO_TRACO)
+    tonal = random.choice(TONAIS)
+    return produzir_tonal(DURACAO_TRACO, tonal)
 
 ''' Produz o som de um intervalo.'''
 def intervalo():
@@ -156,10 +158,12 @@ def plotar_sinal(amostras, titulo='Título'):
     
 if __name__ == "__main__":
     
-    texto = "perigo tropas inimigas rio"
+    texto = "perigo fogo terceiro andar"
 
     print('[1] Convertendo texto para morse.')
     morse = produzir_morse(texto)
+    
+    print morse
 
     print('[2] Transformando o código morse em áudio.')
     audio = produzir_audio(morse)
