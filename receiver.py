@@ -131,17 +131,18 @@ Esta função calcula a transformada Wavelet, do tipo Morlet, e plota o seu
 comportamento no tempo, mostrando exatamente onde há divisão entre som e 
 silêncio.
 '''
-def plotat_wavelet(amostras, maior_ordem):
-
+def plotat_wavelet(amostras, num_amostras_atrasadas, maior_ordem):
+    
     larguras = np.arange(1, maior_ordem+1)
     cwtmatr = signal.cwt(amostras, signal.morlet, larguras)
+    
+    t = np.arange(0, (n_amostras + num_amostras_atrasadas) * t_amost, t_amost, dtype='float64')
             
     plt.figure()
     plt.title(u'Transformada Wavelet - primeira janela')
     plt.xlabel(u'Tempo (s)')
     plt.ylabel(u'Amplitudes')
-    
-    t = np.arange(0, n_amostras * t_amost, t_amost, dtype='float64')
+   
     plt.plot(t, np.abs(cwtmatr[0]), 'k')
     plt.show(block=False)  
     
@@ -150,7 +151,15 @@ def plotat_wavelet(amostras, maior_ordem):
     plt.xlabel(u'Tempo (s)')
     plt.ylabel(u'Amplitudes')
     
-    t = np.arange(0, n_amostras * t_amost, t_amost, dtype='float64')
+    plt.plot(t, np.abs(cwtmatr[maior_ordem/2]), 'm')
+    plt.show(block=False)  
+     
+    
+    plt.figure()
+    plt.title(u'Transformada Wavelet - última janela')
+    plt.xlabel(u'Tempo (s)')
+    plt.ylabel(u'Amplitudes')
+    
     plt.plot(t, np.abs(cwtmatr[maior_ordem-1]), 'r')
     plt.show(block=False)  
      
@@ -198,24 +207,69 @@ if __name__ == "__main__":
                     np.argwhere(espectro_interesse > 10*media_espectro)
     ]
     
-    impulsos = []
+    frequencias_tonais = []
     quantidade_impulsos = len(indices_impulsos)
     
     inicio_range = indices_impulsos[0]
     for i in range(0, quantidade_impulsos-1, 1):
-    
         diferenca = indices_impulsos[i+1] - inicio_range 
-    
         if diferenca > 200 or i == quantidade_impulsos-2:
-        
             media = (indices_impulsos[i] + inicio_range)/2;
-            impulsos.append(media)
+            frequencias_tonais.append(np.round(media[0]))
             inicio_range = indices_impulsos[i+1];
         
-        
+    print frequencias_tonais 
     
-    print impulsos 
+    freqs_corte = []
+    for freq in frequencias_tonais:
+        freqs_corte.append(0.95 * freq)
+        freqs_corte.append(1.05 * freq)
+    
+    # Construindo filtro FIR.
+    faixa_transicao = 5/banda
+    atenuacao = 70.0 # Em dB.
+        
+    # Encontrando parâmetros de Kaiser.
+    num_coeficientes, beta = signal.kaiserord(atenuacao, faixa_transicao)
+    
+    # Calculando o atraso do FIR.
+    ordem = (num_coeficientes-1)
+    num_amostras_atrasadas = int(0.5 * ordem)
+    atraso = num_amostras_atrasadas * t_amost # Em segundos.
+    
+    amostras = np.append(amostras, np.zeros(num_amostras_atrasadas))
+
+    # Criando o filtro FIR.
+    coeficientes = signal.firwin(num_coeficientes, freqs_corte, window=('kaiser', beta), pass_zero=False, nyq = banda)
+
+    # Filtrando o sinal original.
+    y = signal.lfilter(coeficientes, 1.0, amostras)
+    t = np.arange(0, (n_amostras + num_amostras_atrasadas) * t_amost, t_amost, dtype='float64')
+    
+    # Corrigindo atraso
+
+    plt.figure()
+    plt.title(u'Filtrado')
+    plt.xlabel(u'Tempo (s)')
+    plt.ylabel(u'Amplitudes')
+    plt.plot(t-atraso, y, 'p')
+    plt.show(block=False) 
+    
+    w, h = signal.freqz(coeficientes)
+    plt.figure()
+    plt.title(u'Filtro FIR')
+    plt.xlabel(u'Frequência (Hz)')
+    plt.ylabel(u'Amplitude do Filtro')
+    
+    plt.plot(w, 20 * np.log10(abs(h)), 'g')
+    plt.show(block=False) 
   
+  
+    sf.write('audio-filtrado.wav', y, freq_amost)
+    
+
+    
+    
     '''
     # Encontra a frequência com maior energia.
 
@@ -256,7 +310,7 @@ if __name__ == "__main__":
     #sf.write('saida.ogg', sinal_filtrado[:5000000], freq_amost)
     '''
    
-    plotat_wavelet(amostras, 10)
+    plotat_wavelet(y, num_amostras_atrasadas, 50)
     
     raw_input()
     exit(0)
