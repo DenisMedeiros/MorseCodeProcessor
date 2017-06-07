@@ -39,6 +39,8 @@ CODIGO = {
     '9': '----.' 
 }
 
+CODIGO_INVERSO = {v: k for k, v in CODIGO.items()}  
+
 # =============================================================================
 # Funções do receptor.
 # =============================================================================
@@ -163,6 +165,18 @@ def plotat_wavelet(amostras, num_amostras_atrasadas, maior_ordem):
     plt.plot(t, np.abs(cwtmatr[maior_ordem-1]), 'r')
     plt.show(block=False)  
      
+     
+def morse_para_texto(morse):
+    simbolos = morse.split(" ")
+    texto = ""
+    for simbolo in simbolos:
+        if simbolo == '/':
+            texto += " "
+        elif simbolo in CODIGO_INVERSO.keys():
+            texto += CODIGO_INVERSO[simbolo]
+        else:
+            pass
+    return texto
     
        
 # =============================================================================
@@ -222,11 +236,11 @@ if __name__ == "__main__":
     
     freqs_corte = []
     for freq in frequencias_tonais:
-        freqs_corte.append(0.95 * freq)
-        freqs_corte.append(1.05 * freq)
+        freqs_corte.append(freq - 40)
+        freqs_corte.append(freq + 40)
     
     # Construindo filtro FIR.
-    faixa_transicao = 5/banda
+    faixa_transicao = 5.0/banda
     atenuacao = 70.0 # Em dB.
         
     # Encontrando parâmetros de Kaiser.
@@ -237,88 +251,51 @@ if __name__ == "__main__":
     num_amostras_atrasadas = int(0.5 * ordem)
     atraso = num_amostras_atrasadas * t_amost # Em segundos.
     
+    # Corrigindo atraso.
     amostras = np.append(amostras, np.zeros(num_amostras_atrasadas))
-
+    
     # Criando o filtro FIR.
     coeficientes = signal.firwin(num_coeficientes, freqs_corte, window=('kaiser', beta), pass_zero=False, nyq = banda)
 
     # Filtrando o sinal original.
-    y = signal.lfilter(coeficientes, 1.0, amostras)
+    sinal_filtrado = signal.lfilter(coeficientes, 1.0, amostras)
     t = np.arange(0, (n_amostras + num_amostras_atrasadas) * t_amost, t_amost, dtype='float64')
     
-    # Corrigindo atraso
-
-    plt.figure()
-    plt.title(u'Filtrado')
-    plt.xlabel(u'Tempo (s)')
-    plt.ylabel(u'Amplitudes')
-    plt.plot(t-atraso, y, 'p')
-    plt.show(block=False) 
+    # Calculando SNR.
+    
+    ruido_restante = amostras - sinal_filtrado; 
+    
+    SNR = np.mean(sinal_filtrado ** 2)/np.mean(ruido_restante ** 2 ); 
+    SNRdB = 10 * np.log10(SNR)
+    
+    print "Relação sinal ruído (em dB): ", SNRdB
+    
+    # Plotando filtro FIR.
     
     w, h = signal.freqz(coeficientes)
     plt.figure()
     plt.title(u'Filtro FIR')
     plt.xlabel(u'Frequência (Hz)')
     plt.ylabel(u'Amplitude do Filtro')
-    
     plt.plot(w, 20 * np.log10(abs(h)), 'g')
     plt.show(block=False) 
   
   
-    sf.write('audio-filtrado.wav', y, freq_amost)
-    
-
+    sf.write('audio-filtrado.wav', sinal_filtrado, freq_amost)
     
     
-    '''
-    # Encontra a frequência com maior energia.
+    # Plotando sinal filtrado.
+    plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal Filtrado')
 
-    print("[4] Encontrando frequência do codigo morse...")
-
-    maior_potencia = espectro.max()
-    arg_maior_potencia = espectro.argmax()
-    freq_maior_potencia = np.round(np.abs(freq_naturais[arg_maior_potencia]))
-
-    print("[5] Realizando filtragem passa banda... ")
+    # Plota a transformada Wavelet.
+    #plotat_wavelet(sinal_filtrado, num_amostras_atrasadas, 10)
+  
+    print("[5] Convertendo áudio para código morse.")
     
-    raw_input()
-    exit()
-
-    freq_maior_potencia_relativa = freq_maior_potencia/banda
-    limite_inferior = 0.8 * freq_maior_potencia_relativa
-    limite_superior = 1.2 * freq_maior_potencia_relativa
-    limites = [limite_inferior, limite_superior]
-    freq_corte_inferior = limite_inferior * banda
-    freq_corte_superior = limite_superior * banda
-    freqs_corte = [freq_corte_inferior, freq_corte_superior,]
-
-    # Cria o filtro linear do tipo Butterworth passa-faixa,
-    b, a = signal.butter(6, limites, 'band', analog=False)
-                                                            
-    # Plota a resposta em frequência do filtro.
-    plotar_filtro_passa_faixa(b, a, freqs_corte, freq_amost)
-
-    # Aplica o filtro no sinal original.
-    sinal_filtrado = signal.lfilter(b, a, amostras)
-
-    #plotar_sinal(amostras, t_amost, titulo='Sinal original')
-    #plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal filtrado')
-
-    sf.write('saida-filtrado.wav', sinal_filtrado, freq_amost)
-           
-
-    #sf.write('saida.ogg', sinal_filtrado[:5000000], freq_amost)
-    '''
-   
-    plotat_wavelet(y, num_amostras_atrasadas, 50)
+    morse = ''
     
-    raw_input()
-    exit(0)
-
     maximo = np.max(np.abs(amostras))
     minimo = np.min(np.abs(amostras))
-
-    morse = ''
     
     valor_anterior = np.abs(amostras)[0]
     contador_maximos = 0
@@ -357,21 +334,15 @@ if __name__ == "__main__":
                  morse += ' '
                  contador_minimos = 0
                 
-       
     
+    print("[5] Convertendo morse para texto.")
+    
+    # Tratando eventuais espaços em exceço.    
     morse = morse.replace("  ", " ") 
     morse = morse.replace("   ", " / ")   
     
-    CODIGO_INVERSO = {v: k for k, v in CODIGO.items()}  
-    texto = ""
-    
-    simbolos = morse.split(" ")
-    for simbolo in simbolos:
-        if simbolo == '/':
-            texto += " "
-        else:
-            texto += CODIGO_INVERSO[simbolo]
-    
-    print texto
+    texto = morse_para_texto(morse)
+
+    print "[6] Texto identificado: ", texto
     raw_input()
         
