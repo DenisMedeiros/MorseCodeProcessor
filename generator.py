@@ -17,9 +17,8 @@ from scipy import signal
 # =============================================================================
 
 # Cada tonal é uma nota musical A, iniciando em A4.
-# TONAIS = [440.0, 880.0, 1760.0, 3520.0]
+TONAIS = [440.0, 880.0, 1760.0, 3520.0]
 
-TONAIS = [550.0]
           
 BANDA = 4000 # 
 FREQ_AMOST = 2 * BANDA # Frequência de amostragem seguindo Nyquist.

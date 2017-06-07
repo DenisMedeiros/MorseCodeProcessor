@@ -16,7 +16,7 @@ from scipy import signal
 # Configurações do receptor
 # =============================================================================
 
-ARQUIVO = "audio-limpo.wav"
+ARQUIVO = "audio-ruido-gaussiano.wav"
 
 DURACAO_PONTO = 0.060 # 60 ms
 DURACAO_TRACO = 3*DURACAO_PONTO
@@ -187,7 +187,6 @@ if __name__ == "__main__":
     
     plotar_sinal(amostras, t_amost, 'Áudio limpo')
     
-    '''
     print("[4] Procurando frequências do código morse...")
      
     espectro_interesse = np.abs(espectro[0:(n_amostras/2-1)])
@@ -195,19 +194,29 @@ if __name__ == "__main__":
     
     # Encontrando impulsos (vários).
     media_espectro = np.mean(espectro_interesse) 
-    indices_inpulsos = freq_interesse[
+    indices_impulsos = freq_interesse[
                     np.argwhere(espectro_interesse > 10*media_espectro)
     ]
     
+    impulsos = []
+    quantidade_impulsos = len(indices_impulsos)
     
-    for i in range(0, len(indices_inpulsos)-1, 1):
-        valor = indices_inpulsos[0]
-        if indices_inpulsos[i+1] - indices_inpulsos[0] > 100:
-            pass
+    inicio_range = indices_impulsos[0]
+    for i in range(0, quantidade_impulsos-1, 1):
+    
+        diferenca = indices_impulsos[i+1] - inicio_range 
+    
+        if diferenca > 200 or i == quantidade_impulsos-2:
         
-
-   
-   
+            media = (indices_impulsos[i] + inicio_range)/2;
+            impulsos.append(media)
+            inicio_range = indices_impulsos[i+1];
+        
+        
+    
+    print impulsos 
+  
+    '''
     # Encontra a frequência com maior energia.
 
     print("[4] Encontrando frequência do codigo morse...")
@@ -246,7 +255,6 @@ if __name__ == "__main__":
 
     #sf.write('saida.ogg', sinal_filtrado[:5000000], freq_amost)
     '''
-    
    
     plotat_wavelet(amostras, 10)
     
