@@ -167,6 +167,7 @@ def plotat_wavelet(amostras, maior_ordem):
      
      
 def morse_para_texto(morse):
+
     simbolos = morse.split(" ")
     texto = ""
     for simbolo in simbolos:
@@ -178,7 +179,56 @@ def morse_para_texto(morse):
             pass
     return texto
     
+
+def audio_para_morse(audio):
+    
+    maximo = np.max(np.abs(audio))
+    minimo = np.min(np.abs(audio))
+    
+    valor_anterior = np.abs(audio)[0]
+    contador_maximos = 0
+    contador_minimos = 0
+    estava_lendo_maximos = True
+    
+    n_amostras_intervalo = DURACAO_INTERVALO/t_amost
+    
+    morse = ""
+    
+    lendo_maximos = True
+    for amostra in np.abs(audio): 
+        
+        if lendo_maximos:
+            contador_maximos += 1
+   
+        if amostra <= 0.5 * maximo:
+            contador_minimos += 1
+        else:
+            lendo_maximos = True
+            contador_minimos = 0
+        
+        if contador_minimos == n_amostras_intervalo:
+  
+            if lendo_maximos:
+                tempo_simbolo = np.abs(contador_maximos-contador_minimos)*t_amost
+                if tempo_simbolo >= 0.9 * DURACAO_PONTO and tempo_simbolo <= 1.1 * DURACAO_PONTO:
+                    morse += '.'
+                elif tempo_simbolo >= 0.9 * DURACAO_TRACO and tempo_simbolo <= 1.1 * DURACAO_TRACO:
+                    morse += '-'
+                contador_maximos = 0
+                contador_minimos = 0
+                lendo_maximos = False
+            else:
+                 morse += ' '
+                 contador_minimos = 0
        
+    
+    # Tratando eventuais espaços em exceço.    
+    morse = morse.replace("  ", " ") 
+    morse = morse.replace("   ", " / ")  
+
+    return morse
+    
+     
 # =============================================================================
 # Execução do programa.
 # =============================================================================
@@ -292,65 +342,14 @@ if __name__ == "__main__":
     # Plota a transformada Wavelet.
     #plotat_wavelet(sinal_filtrado, 10)
   
-    print("[5] Convertendo áudio para código morse.")
+    print("[4] Convertendo áudio para código morse.")
     
-    plotar_sinal(np.abs(sinal_filtrado), t_amost, titulo='Módulo do sinal filtrado')
-    
-    morse = ''
-    
-    maximo = np.max(np.abs(sinal_filtrado))
-    minimo = np.min(np.abs(sinal_filtrado))
-    
-    valor_anterior = np.abs(sinal_filtrado)[0]
-    contador_maximos = 0
-    contador_minimos = 0
-    estava_lendo_maximos = True
-    
-    n_amostras_intervalo = DURACAO_INTERVALO/t_amost
-    
-    morse += ''
-    
-    lendo_maximos = True
-    
-    for amostra in np.abs(sinal_filtrado): 
-        
-        if lendo_maximos:
-            contador_maximos += 1
-   
-        if amostra <= 0.6:
-            contador_minimos += 1
-        else:
-            lendo_maximos = True
-            contador_minimos = 0
-        
-        if contador_minimos == n_amostras_intervalo:
-        
-            print "Entrou"
-            print "Contou ", contador_maximos, "maximos"
-            print "Contou ", contador_minimos, "minimos"
-            
-            if lendo_maximos:
-                tempo_simbolo = np.abs(contador_maximos-contador_minimos)*t_amost
-                if tempo_simbolo >= 0.9 * DURACAO_PONTO and tempo_simbolo <= 1.1 * DURACAO_PONTO:
-                    morse += '.'
-                elif tempo_simbolo >= 0.9 * DURACAO_TRACO and tempo_simbolo <= 1.1 * DURACAO_TRACO:
-                    morse += '-'
-                contador_maximos = 0
-                contador_minimos = 0
-                lendo_maximos = False
-            else:
-                 morse += ' '
-                 contador_minimos = 0
-                
-    
-    print("[5] Convertendo morse para texto.")
-    
-    # Tratando eventuais espaços em exceço.    
-    morse = morse.replace("  ", " ") 
-    morse = morse.replace("   ", " / ")   
-    
+    #plotar_sinal(np.abs(sinal_filtrado), t_amost, titulo='Módulo do sinal filtrado')
+    morse = audio_para_morse(sinal_filtrado)
+
     print morse
-    
+               
+    print("[5] Convertendo morse para texto.")
     texto = morse_para_texto(morse)
 
     print "[6] Texto identificado: ", texto
