@@ -22,6 +22,8 @@ DURACAO_PONTO = 0.060 # 60 ms
 DURACAO_TRACO = 3*DURACAO_PONTO
 DURACAO_INTERVALO = DURACAO_PONTO
 
+INTERVALO_FILTRAGEM = 40.0
+
 CODIGO = {
     'a': '.-',     'b': '-...',   'c': '-.-.', 
     'd': '-..',    'e': '.',      'f': '..-.',
@@ -181,7 +183,7 @@ def morse_para_texto(morse):
     
 
 def audio_para_morse(audio):
-    
+
     maximo = np.max(np.abs(audio))
     minimo = np.min(np.abs(audio))
     
@@ -190,10 +192,18 @@ def audio_para_morse(audio):
     contador_minimos = 0
     estava_lendo_maximos = True
     
+    # Define os limites máximos de duração.
+    
+    duracao_ponto_inferior = 0.85 * DURACAO_PONTO
+    duracao_ponto_superior = 1.15 * DURACAO_PONTO
+    duracao_traco_inferior = 0.85 * DURACAO_TRACO
+    duracao_traco_superior = 1.15 * DURACAO_TRACO
+    
     n_amostras_intervalo = DURACAO_INTERVALO/t_amost
     
-    morse = ""
+    # Algoritmo para procurar por pontos, traços e intervalos.
     
+    morse = ""
     lendo_maximos = True
     for amostra in np.abs(audio): 
         
@@ -210,9 +220,9 @@ def audio_para_morse(audio):
   
             if lendo_maximos:
                 tempo_simbolo = np.abs(contador_maximos-contador_minimos)*t_amost
-                if tempo_simbolo >= 0.9 * DURACAO_PONTO and tempo_simbolo <= 1.1 * DURACAO_PONTO:
+                if tempo_simbolo >= duracao_ponto_inferior and tempo_simbolo <= duracao_ponto_superior:
                     morse += '.'
-                elif tempo_simbolo >= 0.9 * DURACAO_TRACO and tempo_simbolo <= 1.1 * DURACAO_TRACO:
+                elif tempo_simbolo >= duracao_traco_inferior and tempo_simbolo <= duracao_traco_superior:
                     morse += '-'
                 contador_maximos = 0
                 contador_minimos = 0
@@ -225,8 +235,9 @@ def audio_para_morse(audio):
     # Tratando eventuais espaços em exceço.    
     morse = morse.replace("  ", " ") 
     morse = morse.replace("   ", " / ")  
-
+    
     return morse
+
     
      
 # =============================================================================
@@ -281,8 +292,6 @@ if __name__ == "__main__":
             media = (indices_impulsos[i] + inicio_range)/2;
             frequencias_tonais.append(np.round(media[0]))
             inicio_range = indices_impulsos[i+1];
-        
-    print frequencias_tonais 
     
     freqs_corte = []
     for freq in frequencias_tonais:
@@ -345,10 +354,13 @@ if __name__ == "__main__":
     print("[4] Convertendo áudio para código morse.")
     
     #plotar_sinal(np.abs(sinal_filtrado), t_amost, titulo='Módulo do sinal filtrado')
+    
+    # Adiciona mais alguns zeros no final para melhorar detecção.
+    
+    sinal_filtrado = np.append(sinal_filtrado, np.zeros(15000))
     morse = audio_para_morse(sinal_filtrado)
 
-    print morse
-               
+            
     print("[5] Convertendo morse para texto.")
     texto = morse_para_texto(morse)
 
