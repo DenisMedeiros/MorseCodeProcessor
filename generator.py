@@ -27,7 +27,7 @@ DURACAO_PONTO = 0.060 # 60 ms
 DURACAO_TRACO = 3*DURACAO_PONTO
 DURACAO_INTERVALO = DURACAO_PONTO
 
-SNRdB = 3.0
+SNRdB = 2
 SNR = 10.0 ** (SNRdB/10.0)
 #SNRdB = 10.0 * np.log10(SNRdB)
 
@@ -160,16 +160,22 @@ if __name__ == "__main__":
 
     print('[1] Convertendo texto para morse.')
     morse = produzir_morse(texto)
+    print('  [1.1] Código morse: %s' %morse)
     
-    print morse
-
+    
     print('[2] Transformando o código morse em áudio.')
     audio = produzir_audio(morse)
-
     n_amostras = len(audio)
-    t = np.arange(0, n_amostras*T_AMOST, T_AMOST, dtype='float64')
+    duracao = n_amostras * T_AMOST
     
-    print('[3] Criando ruído gaussiano branco, com SNR(dB) = %d.' %SNRdB)
+    print("  [2.1] Frequência de Amostragem: %d Hz" %FREQ_AMOST)
+    print("  [2.2] Período de Amostragem: %f s" %T_AMOST)
+    print("  [2.2] Número de amostras: %d" %n_amostras)
+    print("  [2.3] Duração do áudio: %f s" %duracao)
+    print("  [2.4] Banda base: %f Hz" %BANDA)
+
+   
+    print('[3] Criando ruído gaussiano branco, de modo que a SNR = %d dB.' %SNRdB)
     
     # Teorema de Parserval para calcular potência do sinal (áudio).
     potencia_sinal = np.sum(np.square(audio))/n_amostras;
@@ -197,7 +203,7 @@ if __name__ == "__main__":
     #sd.play(audio, FREQ_AMOST)
     #sd.wait() 
 
-    print("[5] Concluído!")
+    print("[5] Pressione qualquer tecla para sair...")
     raw_input()
     
 

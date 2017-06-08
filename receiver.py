@@ -16,12 +16,12 @@ from scipy import signal
 # Configurações do receptor
 # =============================================================================
 
-ARQUIVO = "audio-ruido-gaussiano.wav"
+ARQUIVO_AUDIO_RUIDO = "audio-ruido-gaussiano.wav"
+ARQUIVO_AUDIO_FILTRADO = "audio-filtrado.wav"
 
 DURACAO_PONTO = 0.060 # 60 ms
 DURACAO_TRACO = 3*DURACAO_PONTO
 DURACAO_INTERVALO = DURACAO_PONTO
-
 INTERVALO_FILTRAGEM = 40.0
 
 CODIGO = {
@@ -93,43 +93,45 @@ def plotar_sinal(amostras, t_amost, titulo='Título'):
     
    
 '''
-Esta função plota a resposta em frequência de um filtro digital, com base nos
-valores de b e a (numerador e denominador da função de transferência, 
-respectivamente.
-Parâmtros:
-    b = Numerador do filtro linear
-    a = Denominador do filtro linear
-    freqs_corte = Array no formato [freq_corte_inferior, limite_corte_superior]
-    freq_amost = Frequência de amostragem do sinal.
+Esta função plota a resposta em frequência de um filtro digital.
 '''
-def plotar_filtro_passa_faixa(b, a, freqs_corte, freq_amost):
+def plotar_filtro_fir(coeficientes, freqs_corte):
 
-    # Obtém a resposta em frequência do fitro digital definido por a e b.
-    w, h = signal.freqz(b, a)
+    w, h = signal.freqz(coeficientes)
+    w = (w/np.pi) * banda
     
-    # Plota a curva do filtro de Butterworth.
-    plt.plot(0.5 * freq_amost * w / np.pi, np.abs(h), 'b')
+    hDb = 20 * np.log10(abs(h))
     
-    # Plota os pontos onde a queda da potência é 1/raizde(2) (50%).
-    plt.plot(freqs_corte[0], 1.0/np.sqrt(2), 'ko')
-    plt.plot(freqs_corte[1], 1.0/np.sqrt(2), 'ko')
     
-    # Plota uma linha vertical mostrando os dois pontos de corte.
-    plt.axvline(limite_inferior*banda, color='k')
-    plt.axvline(limite_superior*banda, color='k')
+    # Resposta no tempo (sinc).
     
-    # Limita os eixos x e y na plotagem.
-    plt.xlim(0, 0.5*freq_amost)
-    plt.ylim(0, 1.2)
+    fig1 = plt.figure()
+    fig1.canvas.set_window_title("Filtro FIR no domínio do tempo")
     
-    # Alterando títulos e legendas.
-    plt.title(u'Resposta em frequência do filtro passa-faixa')
-    plt.xlabel(u'f(Hz)')
-    plt.ylabel(u'|H(f)|')
-    plt.grid()
-    plt.tight_layout()
-    plt.show()
+    plt.plot(coeficientes, 'k-', linewidth=1)
+    plt.title(u'Filtro FIR, com %d coeficientes.' %len(coeficientes))
+    plt.xlabel(u'Tempo (s)')
+    plt.ylabel(u'Amplitude do Filtro FIR')
+    plt.grid(True)
+    plt.show(block=False)
+    
+    # Resposta em frequência do filtro
+    
+    fig2 = plt.figure()
+    fig2.canvas.set_window_title("Resposta em frequência do filtro FIR")
+    plt.title(u'Filtro FIR')
+    plt.xlabel(u'Frequência (Hz)')
+    plt.ylabel(u'Atenuação do Filtro (em dB)')
+    plt.plot(w, hDb, 'g')
+    plt.grid(True)
+    plt.show(block=False) 
+    
+    # Plota os locais das frequências de corte e onde a atenuação é de 70dB.
+    for freq in freqs_corte:
+        plt.axvline(freq, color='k', linewidth=1)
+        plt.plot(freq, -70, 'ko', linewidth=1)
 
+    
 ''' 
 Esta função calcula a transformada Wavelet, do tipo Morlet, e plota o seu 
 comportamento no tempo, mostrando exatamente onde há divisão entre som e 
@@ -146,24 +148,14 @@ def plotat_wavelet(amostras, maior_ordem):
     plt.title(u'Transformada Wavelet - primeira janela')
     plt.xlabel(u'Tempo (s)')
     plt.ylabel(u'Amplitudes')
-   
     plt.plot(t, np.abs(cwtmatr[0]), 'k')
     plt.show(block=False)  
     
+
     plt.figure()
     plt.title(u'Transformada Wavelet - última janela')
     plt.xlabel(u'Tempo (s)')
     plt.ylabel(u'Amplitudes')
-    
-    plt.plot(t, np.abs(cwtmatr[maior_ordem/2]), 'm')
-    plt.show(block=False)  
-     
-    
-    plt.figure()
-    plt.title(u'Transformada Wavelet - última janela')
-    plt.xlabel(u'Tempo (s)')
-    plt.ylabel(u'Amplitudes')
-    
     plt.plot(t, np.abs(cwtmatr[maior_ordem-1]), 'r')
     plt.show(block=False)  
      
@@ -239,50 +231,24 @@ def audio_para_morse(audio):
     return morse
 
     
-     
-# =============================================================================
-# Execução do programa.
-# =============================================================================
-
-if __name__ == "__main__":
-
-    
-    print('[1] Abrindo arquivo "%s"...' %ARQUIVO)
-    (amostras, freq_amost) = sf.read(ARQUIVO, dtype='float64')
-
-    t_amost = 1.0/freq_amost
-    n_amostras = len(amostras)
-    duracao = n_amostras * t_amost
-    banda = 0.5 * freq_amost
-
-    print("[2] Informações do áudio:")
-    print("  [2.1] Frequência de Amostragem: %d Hz" %freq_amost)
-    print("  [2.2] Período de Amostragem: %f s" %t_amost)
-    print("  [2.2] Número de amostras: %d" %n_amostras)
-    print("  [2.3] Duração do áudio: %f s" %duracao)
-    print("  [2.4] Banda base: %f Hz" %banda)
-    
-
-    print("[3] Calculando FFT do áudio...")
-
+def filtrar_sinal(amostras):
+ 
+    frequencias_tonais = []
+ 
     # Calcula a FFT.
     espectro = np.fft.fft(amostras)/n_amostras 
     freq_naturais = np.fft.fftfreq(n_amostras, t_amost)
     
-    plotar_sinal(amostras, t_amost, 'Áudio limpo')
-    
-    print("[4] Procurando frequências do código morse...")
-     
+    # Obtém apenas a parte positiva do espectro.
     espectro_interesse = np.abs(espectro[0:(n_amostras/2-1)])
     freq_interesse = abs(freq_naturais[0:(n_amostras/2-1)])
     
     # Encontrando impulsos (vários).
     media_espectro = np.mean(espectro_interesse) 
     indices_impulsos = freq_interesse[
-                    np.argwhere(espectro_interesse > 10*media_espectro)
+                    np.argwhere(espectro_interesse > 10 * media_espectro)
     ]
     
-    frequencias_tonais = []
     quantidade_impulsos = len(indices_impulsos)
     
     inicio_range = indices_impulsos[0]
@@ -292,11 +258,11 @@ if __name__ == "__main__":
             media = (indices_impulsos[i] + inicio_range)/2;
             frequencias_tonais.append(np.round(media[0]))
             inicio_range = indices_impulsos[i+1];
-    
+            
     freqs_corte = []
     for freq in frequencias_tonais:
-        freqs_corte.append(freq - 40)
-        freqs_corte.append(freq + 40)
+        freqs_corte.append(freq - INTERVALO_FILTRAGEM)
+        freqs_corte.append(freq + INTERVALO_FILTRAGEM)
     
     # Construindo filtro FIR.
     faixa_transicao = 5.0/banda
@@ -315,55 +281,71 @@ if __name__ == "__main__":
     
     # Criando o filtro FIR.
     coeficientes = signal.firwin(num_coeficientes, freqs_corte, window=('kaiser', beta), pass_zero=False, nyq = banda)
-
+    
     # Filtrando o sinal original.
     sinal_filtrado = signal.lfilter(coeficientes, 1.0, amostras_maior)
     
     # Remova o atraso do início do sinal filtrado.
     sinal_filtrado = np.delete(sinal_filtrado, range(0, num_amostras_atrasadas, 1))
-        
-    # Calculando SNR.
-    
-    ruido_restante = amostras - sinal_filtrado; 
-    
-    SNR = np.mean(sinal_filtrado ** 2)/np.mean(ruido_restante ** 2 ); 
-    SNRdB = 10 * np.log10(SNR)
-    
-    print "Relação sinal ruído (em dB): ", SNRdB
     
     # Plotando filtro FIR.
-    
-    w, h = signal.freqz(coeficientes)
-    plt.figure()
-    plt.title(u'Filtro FIR')
-    plt.xlabel(u'Frequência (Hz)')
-    plt.ylabel(u'Amplitude do Filtro')
-    plt.plot(w, 20 * np.log10(abs(h)), 'g')
-    plt.show(block=False) 
-  
-  
-    sf.write('audio-filtrado.wav', sinal_filtrado, freq_amost)
-    
-    
-    # Plotando sinal filtrado.
-    plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal Filtrado')
+    plotar_filtro_fir(coeficientes, freqs_corte)
 
+    
+    return sinal_filtrado
+       
+     
+# =============================================================================
+# Execução do programa.
+# =============================================================================
+
+if __name__ == "__main__":
+
+    
+    print('[1] Abrindo arquivo "%s"...' %ARQUIVO_AUDIO_RUIDO)
+    (amostras, freq_amost) = sf.read(ARQUIVO_AUDIO_RUIDO, dtype='float64')
+
+    t_amost = 1.0/freq_amost
+    n_amostras = len(amostras)
+    duracao = n_amostras * t_amost
+    banda = 0.5 * freq_amost
+
+    print("[2] Informações do áudio:")
+    print("  [2.1] Frequência de Amostragem: %d Hz" %freq_amost)
+    print("  [2.2] Período de Amostragem: %f s" %t_amost)
+    print("  [2.2] Número de amostras: %d" %n_amostras)
+    print("  [2.3] Duração do áudio: %f s" %duracao)
+    print("  [2.4] Banda base: %f Hz" %banda)
+    
+    plotar_sinal(amostras, t_amost, 'Áudio limpo')
+    
+    print("[3] Filtrando sinal.")
+    sinal_filtrado = filtrar_sinal(amostras)
+    plotar_sinal(sinal_filtrado, t_amost, titulo='Sinal Filtrado')
+    
+    # Calculando SNR.
+    ruido_restante = amostras - sinal_filtrado; 
+    SNR = np.mean(sinal_filtrado ** 2)/np.mean(ruido_restante ** 2 ); 
+    SNRdB = 20 * np.log10(SNR)
+    
+    print("  [3.1] Foram atenuados %f dB de ruído" %SNRdB)
+    
     # Plota a transformada Wavelet.
-    #plotat_wavelet(sinal_filtrado, 10)
+    #plotat_wavelet(amostras, 10)
   
     print("[4] Convertendo áudio para código morse.")
-    
-    #plotar_sinal(np.abs(sinal_filtrado), t_amost, titulo='Módulo do sinal filtrado')
-    
-    # Adiciona mais alguns zeros no final para melhorar detecção.
-    
-    sinal_filtrado = np.append(sinal_filtrado, np.zeros(15000))
     morse = audio_para_morse(sinal_filtrado)
-
+    print("  [4.1] Código morse: %s" %morse)
             
     print("[5] Convertendo morse para texto.")
     texto = morse_para_texto(morse)
 
-    print "[6] Texto identificado: ", texto
+    print("  [5.1] Texto identificado: %s" %texto)
+    
+    print("[6] Salvando resultado em %s" %ARQUIVO_AUDIO_FILTRADO)
+    
+    sf.write(ARQUIVO_AUDIO_FILTRADO, sinal_filtrado, freq_amost)
+    
+    print("[7] Pressione qualquer tecla para sair...")
     raw_input()
         
