@@ -17,7 +17,9 @@ from scipy import signal
 # =============================================================================
 
 # Cada tonal é uma nota musical A, iniciando em A4.
-TONAIS = [440.0, 880.0, 1760.0, 3520.0]
+#TONAIS = [440.0, 880.0, 1760.0, 3520.0]
+
+TONAIS = [300.0, 1000.0, 1700.0, 2400.0, 3100.0]
           
 BANDA = 4000 # 
 FREQ_AMOST = 2 * BANDA # Frequência de amostragem seguindo Nyquist.
@@ -27,7 +29,7 @@ DURACAO_PONTO = 0.060 # 60 ms
 DURACAO_TRACO = 3*DURACAO_PONTO
 DURACAO_INTERVALO = DURACAO_PONTO
 
-SNRdB = 2
+SNRdB = 3
 SNR = 10.0 ** (SNRdB/10.0)
 #SNRdB = 10.0 * np.log10(SNRdB)
 
@@ -83,13 +85,11 @@ def produzir_silencio(duracao):
     return amostras
 
 ''' Produz o som de um ponto.'''
-def ponto():
-    tonal = random.choice(TONAIS)
+def ponto(tonal):
     return produzir_tonal(DURACAO_PONTO, tonal)
 
 ''' Produz o som de um traço.'''
-def traco():
-    tonal = random.choice(TONAIS)
+def traco(tonal):
     return produzir_tonal(DURACAO_TRACO, tonal)
 
 ''' Produz o som de um intervalo.'''
@@ -100,13 +100,14 @@ def intervalo():
 def produzir_audio(morse):
 
     resultado = np.zeros(shape=(0,0))
-  
+    
     for caractere in morse:
+        tonal = random.choice(TONAIS)
         if caractere == '.':
-            resultado = np.append(resultado, ponto())
+            resultado = np.append(resultado, ponto(tonal))
             resultado = np.append(resultado, intervalo())
         elif caractere == '-':
-            resultado = np.append(resultado, traco())
+            resultado = np.append(resultado, traco(tonal))
             resultado = np.append(resultado, intervalo())
         elif caractere == ' ':
             resultado = np.append(resultado, intervalo())
