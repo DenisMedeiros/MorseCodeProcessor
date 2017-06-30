@@ -17,9 +17,9 @@ from scipy import signal
 # =============================================================================
 
 # Cada tonal é uma nota musical A, iniciando em A4.
-#TONAIS = [440.0, 880.0, 1760.0, 3520.0]
+TONAIS = [440.0, 880.0, 1760.0, 3520.0]
 
-TONAIS = [300.0, 1000.0, 1700.0, 2400.0, 3100.0]
+#TONAIS = range(300, 18000, 1200)
           
 BANDA = 4000 # 
 FREQ_AMOST = 2 * BANDA # Frequência de amostragem seguindo Nyquist.
@@ -161,7 +161,8 @@ if __name__ == "__main__":
 
     print('[1] Convertendo texto para morse.')
     morse = produzir_morse(texto)
-    print('  [1.1] Código morse: %s' %morse)
+    print('  [1.1] Texto em ASCII: %s' %texto)
+    print('  [1.2] Código morse: %s' %morse)
     
     
     print('[2] Transformando o código morse em áudio.')
