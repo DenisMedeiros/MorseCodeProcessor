@@ -5,9 +5,19 @@ The receiver, on the other hand, reads a audio file containing a Morse Code mess
 
 It was developed completely in Python, using the libraries Numpy, SciPy, Matplotlib and soundfile. All dependencies can be found in the file 'requirements.txt'.
 
+Some pictures of the project:
 
+Clean audio
+![clean-audio](https://github.com/DenisMedeiros/MorseCodeProcessor/raw/master/images/clean-audio.png)
 
+Noisy audio
+![noisy-audio](https://github.com/DenisMedeiros/MorseCodeProcessor/raw/master/images/noisy-audio.png)
 
+FIR filter
+![fir-filter](https://github.com/DenisMedeiros/MorseCodeProcessor/raw/master/images/fir-filter.png)
+
+Filtered audio
+![filtered-audio](https://github.com/DenisMedeiros/MorseCodeProcessor/raw/master/images/filtered-audio.png)
 
 
 
